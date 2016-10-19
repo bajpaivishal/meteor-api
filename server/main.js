@@ -5,7 +5,7 @@ if(Meteor.isServer) {
     // When Meteor starts, create new collection in Mongo if not exists.
     Meteor.startup(function () {
         // Define the schema
-        schemaValidation = !true;
+        schemaValidation = true;
         User = new Meteor.Collection('user');
         BookSchema = new SimpleSchema({
             name: {
