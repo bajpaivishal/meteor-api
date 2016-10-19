@@ -1,9 +1,34 @@
 import { Meteor } from 'meteor/meteor';
+import { SimpleSchema } from 'meteor/aldeed:simple-schema';
 
 if(Meteor.isServer) {
     // When Meteor starts, create new collection in Mongo if not exists.
     Meteor.startup(function () {
+        // Define the schema
+        schemaValidation = !true;
         User = new Meteor.Collection('user');
+        BookSchema = new SimpleSchema({
+            name: {
+                type: String,
+                max: 200
+            },
+            email: {
+                type: String,
+            },
+            course: {
+                type: String,
+            },
+            gender: {
+                type: String,
+            },
+            subjects: {
+                type: Array
+            },
+            "subjects.$": {
+                type: String
+            }
+        });
+        schemaValidation && User.attachSchema(BookSchema);
     });
 
 // GET /user - returns every message from MongoDB collection.
@@ -20,21 +45,21 @@ if(Meteor.isServer) {
 
         .post(function(){
             var response;
-            if(this.request.body.userName === undefined || this.request.body.userPassword === undefined) {
-                response = {
-                    "error" : true,
-                    "message" : "invalid data"
-                };
-            } else {
-                User.insert({
-                    UserName : this.request.body.userName,
-                    UserPassword : this.request.body.userPassword
-                });
+            var obj = {
+                name : this.request.body.name,
+                email : this.request.body.email,
+                gender : this.request.body.gender,
+                course : this.request.body.course,
+                subjects : this.request.body.subjects,
+            }
+            schemaValidation && BookSchema.validate(obj);
+                obj._id = User.insert(obj);
                 response = {
                     "error" : false,
-                    "message" : "User added."
+                    "message" : "user added",
+                    "data" : obj,
                 }
-            }
+
             this.response.setHeader('Content-Type','application/json');
             this.response.end(JSON.stringify(response));
         });
@@ -67,10 +92,18 @@ if(Meteor.isServer) {
             if(this.params.id !== undefined) {
                 var data = User.find({_id : this.params.id}).fetch();
                 if(data.length > 0) {
-                    if(User.update({_id : data[0]._id},{$set : {UserName : this.request.body.userName,UserPassword : this.request.body.userPassword}}) === 1) {
+                    var obj = {
+                        name : this.request.body.name,
+                        email : this.request.body.email,
+                        course : this.request.body.course,
+                        gender : this.request.body.gender,
+                        subjects : this.request.body.subjects
+                    };
+                    schemaValidation && BookSchema.validate(obj);
+                    if(User.update({_id : data[0]._id},{$set : obj}) === 1) {
                         response = {
                             "error" : false,
-                            "message" : "User information updated."
+                            "message" : "User information updated.",
                         }
                     } else {
                         response = {
